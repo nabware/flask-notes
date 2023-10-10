@@ -4,6 +4,7 @@ from flask import Flask, render_template, redirect
 from flask_debugtoolbar import DebugToolbarExtension
 
 from models import db, connect_db, User
+from forms import RegisterUserForm
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
@@ -30,6 +31,7 @@ def home():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     """Returns register form or handles register form submit"""
+    form = RegisterUserForm()
 
 
 
