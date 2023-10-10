@@ -125,3 +125,5 @@ def logout():
         raise Unauthorized()
 
     return redirect("/")
+
+
