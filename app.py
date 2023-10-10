@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, render_template, redirect
+from flask import Flask, render_template, redirect, flash, session
 from flask_debugtoolbar import DebugToolbarExtension
 
 from models import db, connect_db, User
@@ -52,6 +52,8 @@ def register():
         db.session.add(user)
         db.session.commit()
 
+        session['username'] = user.username
+
         return redirect(f"/users/{user.username}")
 
     return render_template("register.html", form=form)
@@ -70,6 +72,24 @@ def login():
         user = User.authenticate(username=username, pwd=pwd)
 
         if user:
+            session['username'] = user.username
             return redirect(f"/users/{user.username}")
 
     return render_template("login.html", form=form)
+
+
+@app.get('/users/<string:username>')
+def show_user_page(username):
+    """Returns user's page or redirects to login page"""
+
+    if 'username' not in session:
+        flash('You must be logged in to view!')
+        return redirect('/login')
+    elif session['username'] != username:
+        flash("That's illegal!")
+        return redirect(f'/users/{session["username"]}')
+
+    user = User.query.get_or_404(username)
+
+    return render_template('user-details.html', user=user)
+
