@@ -41,6 +41,8 @@ class RegisterUserForm(FlaskForm):
 class LoginForm(FlaskForm):
     """Form for logging a user in"""
 
+    # validating length here may give attackers too much info
+
     username = StringField(
         "Username",
         validators=[
@@ -52,3 +54,6 @@ class LoginForm(FlaskForm):
         validators=[
             InputRequired(),
             Length(min=2, max=100)])
+
+class CSRFProtectForm(FlaskForm):
+    """Form for logging out"""

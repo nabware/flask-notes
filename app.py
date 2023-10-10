@@ -1,10 +1,11 @@
 import os
+from werkzeug.exceptions import Unauthorized
 
 from flask import Flask, render_template, redirect, flash, session
 from flask_debugtoolbar import DebugToolbarExtension
 
 from models import db, connect_db, User
-from forms import RegisterUserForm, LoginForm
+from forms import RegisterUserForm, LoginForm, CSRFProtectForm
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
@@ -20,6 +21,8 @@ app.config['SECRET_KEY'] = "I'LL NEVER TELL!!"
 
 debug = DebugToolbarExtension(app)
 
+SESSION_USERNAME_KEY = 'username'
+
 
 @app.get("/")
 def home():
@@ -31,6 +34,9 @@ def home():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     """Returns register form and handles register form submit"""
+
+    if SESSION_USERNAME_KEY in session:
+        return redirect(f"/users/{session[SESSION_USERNAME_KEY]}")
 
     form = RegisterUserForm()
 
@@ -52,7 +58,7 @@ def register():
         db.session.add(user)
         db.session.commit()
 
-        session['username'] = user.username
+        session[SESSION_USERNAME_KEY] = user.username
 
         return redirect(f"/users/{user.username}")
 
@@ -63,6 +69,9 @@ def register():
 def login():
     """Returns login form and handles login form submit"""
 
+    if SESSION_USERNAME_KEY in session:
+        return redirect(f"/users/{session[SESSION_USERNAME_KEY]}")
+
     form = LoginForm()
 
     if form.validate_on_submit():
@@ -72,8 +81,11 @@ def login():
         user = User.authenticate(username=username, pwd=pwd)
 
         if user:
-            session['username'] = user.username
+            session[SESSION_USERNAME_KEY] = user.username
+
             return redirect(f"/users/{user.username}")
+        else:
+            form.username.errors = ['Invalid username and/or password']
 
     return render_template("login.html", form=form)
 
@@ -82,14 +94,34 @@ def login():
 def show_user_page(username):
     """Returns user's page or redirects to login page"""
 
-    if 'username' not in session:
+    # this allows wekzug lib to deal with unauthorized access
+    # if SESSION_USERNAME_KEY not in session:
+    #     raise Unauthorized()
+
+    if SESSION_USERNAME_KEY not in session:
         flash('You must be logged in to view!')
         return redirect('/login')
-    elif session['username'] != username:
+
+    elif session[SESSION_USERNAME_KEY] != username:
         flash("That's illegal!")
         return redirect(f'/users/{session["username"]}')
 
     user = User.query.get_or_404(username)
 
-    return render_template('user-details.html', user=user)
+    form = CSRFProtectForm()
 
+    return render_template('user-details.html', user=user, form=form)
+
+
+@app.post('/logout')
+def logout():
+    """Log out current user and redirect to home page"""
+
+    form = CSRFProtectForm()
+
+    if form.validate_on_submit():
+        session.pop(SESSION_USERNAME_KEY, None)
+    else:
+        raise Unauthorized()
+
+    return redirect("/")

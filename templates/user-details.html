@@ -5,8 +5,14 @@
 {% block content %}
 
   <h1>Username: {{ user.username }}</h1>
-  <h1>First Name: {{ user.first_name }}</h1>
-  <h1>Last Name: {{ user.last_name }}</h1>
-  <h1>Email Address: {{ user.email }}</h1>
+  <h3>First Name: {{ user.first_name }}</h3>
+  <h3>Last Name: {{ user.last_name }}</h3>
+  <h3>Email Address: {{ user.email }}</h3>
+
+  <form action="/logout" method="POST">
+    {{ form.hidden_tag() }} <!--add type=hidden form fields -->
+
+    <button type="submit">Logout</button>
+  </form>
 
 {% endblock %}
