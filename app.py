@@ -153,3 +153,34 @@ def add_note(username):
         return redirect(f"/users/{username}")
 
     return render_template("add-note.html", form=form)
+
+
+@app.route("/notes/<int:note_id>/update", methods=["GET", "POST"])
+def update_note(note_id):
+    """Returns update note form and handles update note form submit"""
+
+    note = Note.query.get_or_404(note_id)
+    username = note.user.username
+
+    if SESSION_USERNAME_KEY not in session:
+        flash('You must be logged in to view!')
+        return redirect('/login')
+
+    elif session[SESSION_USERNAME_KEY] != username:
+        flash("That's illegal!")
+        return redirect(f'/users/{session["username"]}')
+
+    form = NoteForm(obj=note)
+
+    if form.validate_on_submit():
+        title = form.title.data
+        content = form.content.data
+
+        note.title = title
+        note.content = content
+
+        db.session.commit()
+
+        return redirect(f"/users/{username}")
+
+    return render_template("update-note.html", form=form, note=note)
