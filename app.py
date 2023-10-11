@@ -4,8 +4,8 @@ from werkzeug.exceptions import Unauthorized
 from flask import Flask, render_template, redirect, flash, session
 from flask_debugtoolbar import DebugToolbarExtension
 
-from models import db, connect_db, User
-from forms import RegisterUserForm, LoginForm, CSRFProtectForm
+from models import db, connect_db, User, Note
+from forms import RegisterUserForm, LoginForm, CSRFProtectForm, NoteForm
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
@@ -127,3 +127,29 @@ def logout():
     return redirect("/")
 
 
+@app.route("/users/<username>/notes/add", methods=["GET", "POST"])
+def add_note(username):
+    """Returns add note form and handles note form submit"""
+
+    if SESSION_USERNAME_KEY not in session:
+        flash('You must be logged in to view!')
+        return redirect('/login')
+
+    elif session[SESSION_USERNAME_KEY] != username:
+        flash("That's illegal!")
+        return redirect(f'/users/{session["username"]}')
+
+    form = NoteForm()
+
+    if form.validate_on_submit():
+        title = form.title.data
+        content = form.content.data
+
+        note = Note(title=title, content=content, owner_username=username)
+
+        db.session.add(note)
+        db.session.commit()
+
+        return redirect(f"/users/{username}")
+
+    return render_template("add-note.html", form=form)
