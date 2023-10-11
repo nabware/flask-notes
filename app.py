@@ -126,6 +126,35 @@ def logout():
 
     return redirect("/")
 
+@app.post('/users/<string:username>/delete')
+def delete_user(username):
+    """Deletes user"""
+
+    if SESSION_USERNAME_KEY not in session:
+        flash('You must be logged in to view!')
+        return redirect('/login')
+
+    elif session[SESSION_USERNAME_KEY] != username:
+        flash("That's illegal!")
+        return redirect(f'/users/{session["username"]}')
+
+    user = User.query.get_or_404(username)
+
+    form = CSRFProtectForm()
+
+    if form.validate_on_submit():
+        for note in user.notes:
+            db.session.delete(note)
+
+        db.session.delete(user)
+        db.session.commit()
+
+        session.pop(SESSION_USERNAME_KEY, None)
+    else:
+        raise Unauthorized()
+
+    return redirect("/")
+
 
 @app.route("/users/<username>/notes/add", methods=["GET", "POST"])
 def add_note(username):
@@ -184,3 +213,28 @@ def update_note(note_id):
         return redirect(f"/users/{username}")
 
     return render_template("update-note.html", form=form, note=note)
+
+@app.post("/notes/<int:note_id>/delete")
+def delete_note(note_id):
+    """Deletes note"""
+
+    note = Note.query.get_or_404(note_id)
+    username = note.user.username
+
+    if SESSION_USERNAME_KEY not in session:
+        flash('You must be logged in to view!')
+        return redirect('/login')
+
+    elif session[SESSION_USERNAME_KEY] != username:
+        flash("That's illegal!")
+        return redirect(f'/users/{session["username"]}')
+
+    form = CSRFProtectForm()
+
+    if form.validate_on_submit():
+        db.session.delete(note)
+        db.session.commit()
+
+        return redirect(f"/users/{username}")
+
+    return redirect("/")

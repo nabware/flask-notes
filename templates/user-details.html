@@ -14,14 +14,20 @@
 
     <button formaction="/users/{{ user.username }}/notes/add" formmethod="GET" type="submit">Add Note</button>
     <button formaction="/logout" formmethod="POST" type="submit">Logout</button>
+    <button formaction="/users/{{ user.username }}/delete" formmethod="POST" type="submit">Delete</button>
   </form>
 
   {% if user.notes %}
     <ul>
       {% for note in user.notes %}
         <li>
-          <a href="">{{ note.title }}</a>
+          <a href="/notes/{{note.id}}/update">{{ note.title }}</a>
           <p>{{ note.content }}</p>
+          <form action="/notes/{{note.id}}/delete" method="POST">
+            {{ form.hidden_tag() }}
+
+            <button type="submit">Delete</button>
+          </form>
         </li>
       {% endfor %}
     </ul>
